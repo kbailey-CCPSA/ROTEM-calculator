@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CCPSA ROTEM Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&family=Source+Sans+3:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  /* Brand */
+  --navy:          #1a2f4e;
+  --navy-mid:      #2a4268;
+  --navy-light:    #3d5a82;
+  --white:         #ffffff;
+  --off-white:     #f7f8fa;
+  --gray-50:       #f0f2f5;
+  --gray-100:      #e4e8ef;
+  --gray-200:      #cdd4de;
+  --gray-300:      #b0bac8;
+  --gray-500:      #6b7a90;
+  --gray-700:      #3d4a5c;
+
+  /* Algorithm channel colors — from the photo */
+  --ch-extem:      #d9523a;   /* coral-red — EXTEM box */
+  --ch-extem-lt:   #fdf1ee;
+  --ch-extem-bd:   #f0bdb3;
+  --ch-plat:       #2563b0;   /* blue — Platelets */
+  --ch-plat-lt:    #edf3fb;
+  --ch-plat-bd:    #b3ccee;
+  --ch-fibtem:     #4e3ba8;   /* deep purple — FIBTEM */
+  --ch-fibtem-lt:  #f4f1fc;
+  --ch-fibtem-bd:  #cbc0ed;
+  --ch-txa:        #3b9ed4;   /* sky blue — TXA/Max Lysis */
+  --ch-txa-lt:     #eaf5fb;
+  --ch-txa-bd:     #9fd4ee;
+  --ch-txa-late:   #5a8fa8;
+  --ch-txa-late-lt:#eef5f9;
+  --ch-txa-late-bd:#aacde0;
+  --ch-green:      #2e7d52;   /* green — MTP/Normal */
+  --ch-green-lt:   #eaf4ee;
+  --ch-green-bd:   #b2d8c4;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(26,47,78,.08), 0 1px 2px rgba(26,47,78,.05);
+  --shadow-md: 0 4px 14px rgba(26,47,78,.10), 0 2px 4px rgba(26,47,78,.06);
+  --shadow-lg: 0 8px 24px rgba(26,47,78,.12), 0 3px 6px rgba(26,47,78,.07);
+
+  --radius: 10px;
+}
+
+/* ═══════════════════════════════════════════════
+   RESET & BASE
+═══════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Source Sans 3', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-700);
+  min-height: 100vh;
+  padding-bottom: 64px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ═══════════════════════════════════════════════
+   SITE HEADER
+═══════════════════════════════════════════════ */
+.site-header {
+  background: var(--navy);
+  border-bottom: 3px solid var(--ch-extem);
+  padding: 13px 24px 11px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-logo-img {
+  height: 42px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+/* SVG text fallback — shows if image 404s */
+.header-logo-fallback {
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.header-logo-fallback .hf-abbr {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  color: rgba(255,255,255,.50);
+  text-transform: uppercase;
+}
+.header-logo-fallback .hf-name {
+  font-family: 'Merriweather', serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.25;
+}
+
+.header-sep {
+  width: 1px;
+  height: 38px;
+  background: rgba(255,255,255,.16);
+  flex-shrink: 0;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+.header-tool {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: .01em;
+}
+.header-sub {
+  font-size: 11.5px;
+  color: rgba(255,255,255,.50);
+}
+
+/* ═══════════════════════════════════════════════
+   PAGE SHELL
+═══════════════════════════════════════════════ */
+.page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 22px 18px 0;
+}
+
+/* ═══════════════════════════════════════════════
+   MTP BANNER
+═══════════════════════════════════════════════ */
+.mtp-banner {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--ch-green-lt);
+  border: 1px solid var(--ch-green-bd);
+  border-left: 4px solid var(--ch-green);
+  border-radius: var(--radius);
+  padding: 11px 15px;
+  margin-bottom: 18px;
+}
+.mtp-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--ch-green);
+  flex-shrink: 0;
+  margin-top: 4px;
+  animation: pulse-dot 2.2s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .5; transform: scale(.85); }
+}
+.mtp-text {
+  font-size: 13px;
+  color: #1c5438;
+  line-height: 1.65;
+}
+.mtp-text strong { font-weight: 700; color: #144530; }
+
+/* ═══════════════════════════════════════════════
+   SECTION LABELS
+═══════════════════════════════════════════════ */
+.section-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 9px;
+  margin-top: 20px;
+}
+.section-label:first-of-type { margin-top: 0; }
+
+/* ═══════════════════════════════════════════════
+   REFERENCE PANEL (collapsible)
+═══════════════════════════════════════════════ */
+.ref-panel {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 18px;
+  overflow: hidden;
+}
+.ref-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 11px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-family: 'Source Sans 3', sans-serif;
+  transition: background .15s;
+}
+.ref-toggle:hover { background: var(--gray-50); }
+.ref-toggle-left { display: flex; align-items: center; gap: 10px; }
+.ref-toggle-icon { font-size: 17px; flex-shrink: 0; }
+.ref-toggle-label { font-size: 12px; font-weight: 700; letter-spacing: .10em; text-transform: uppercase; color: var(--navy); }
+.ref-toggle-sub   { font-size: 11px; color: var(--gray-500); margin-top: 1px; }
+.ref-chevron { font-size: 11px; color: var(--gray-300); transition: transform .22s; }
+.ref-panel.open .ref-chevron { transform: rotate(180deg); }
+
+.ref-body { display: none; padding: 0 15px 15px; }
+.ref-panel.open .ref-body { display: block; }
+
+.ref-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 700px) {
+  .ref-grid { grid-template-columns: 1fr; }
+}
+
+.ref-box {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  border-radius: 8px;
+  padding: 12px 13px;
+}
+.ref-box-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--gray-500);
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+/* SVG Clot Diagram */
+.clot-svg { width: 100%; height: auto; display: block; }
+
+/* Abbrev Table */
+.abbrev-tbl { width: 100%; border-collapse: collapse; }
+.abbrev-tbl tr { border-bottom: 1px solid var(--gray-100); }
+.abbrev-tbl tr:last-child { border-bottom: none; }
+.abbrev-tbl td { padding: 5px 3px; font-size: 12px; line-height: 1.4; vertical-align: top; }
+.abbrev-tbl td.abbr { font-weight: 700; color: var(--navy); width: 60px; white-space: nowrap; font-size: 11.5px; }
+.abbrev-tbl td.def  { color: var(--gray-700); }
+.abbrev-tbl .sep { border-top: 2px solid var(--gray-100); }
+
+/* ═══════════════════════════════════════════════
+   ENTRY MODE TABS
+═══════════════════════════════════════════════ */
+.entry-tabs {
+  display: flex;
+  border-radius: var(--radius) var(--radius) 0 0;
+  overflow: hidden;
+  border: 1px solid var(--gray-100);
+  border-bottom: none;
+}
+.entry-tab {
+  flex: 1;
+  padding: 11px 14px;
+  background: var(--gray-50);
+  border: none;
+  cursor: pointer;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-bottom: 2px solid transparent;
+  transition: all .16s;
+}
+.entry-tab + .entry-tab { border-left: 1px solid var(--gray-100); }
+.entry-tab:hover { background: #eaedf2; color: var(--navy); }
+.entry-tab.active {
+  background: var(--white);
+  color: var(--navy);
+  border-bottom: 2px solid var(--navy);
+}
+.entry-tab-icon { font-size: 15px; }
+
+.entry-panel {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 16px 15px 14px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 0;
+}
+.entry-panel.hidden { display: none; }
+
+/* ═══════════════════════════════════════════════
+   PHOTO / UPLOAD PANEL
+═══════════════════════════════════════════════ */
+.drop-zone {
+  border: 2px dashed var(--gray-200);
+  border-radius: 8px;
+  padding: 26px 16px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: border-color .2s, background .2s;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: var(--ch-txa);
+  background: var(--ch-txa-lt);
+}
+.drop-zone input[type="file"] {
+  position: absolute; inset: 0; opacity: 0;
+  cursor: pointer; width: 100%; height: 100%;
+}
+.dz-icon  { font-size: 30px; margin-bottom: 7px; }
+.dz-label { font-size: 14px; font-weight: 600; color: var(--navy); margin-bottom: 3px; }
+.dz-sub   { font-size: 12px; color: var(--gray-500); }
+.dz-sub strong { color: var(--ch-txa); }
+
+/* Preview */
+.upload-preview { display: none; margin-top: 13px; }
+.upload-preview.visible { display: block; }
+.preview-row { display: flex; gap: 13px; align-items: flex-start; }
+.preview-thumb {
+  flex-shrink: 0; width: 112px;
+  border: 1px solid var(--gray-100);
+  border-radius: 7px; overflow: hidden;
+  background: var(--gray-50);
+}
+.preview-thumb img { width: 100%; height: auto; display: block; }
+.preview-detail { flex: 1; min-width: 0; }
+.preview-fname  { font-size: 12px; font-weight: 600; color: var(--navy); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Status chips */
+.ext-status {
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  margin-bottom: 9px;
+}
+.ext-status.reading  { background: var(--ch-txa-lt);   border: 1px solid var(--ch-txa-bd);   color: #1a5e80; }
+.ext-status.success  { background: var(--ch-green-lt); border: 1px solid var(--ch-green-bd); color: #1c5438; }
+.ext-status.partial  { background: #fff8ec; border: 1px solid #f5d78a; color: #7a5200; }
+.ext-status.error    { background: var(--ch-extem-lt); border: 1px solid var(--ch-extem-bd); color: #8b2c18; }
+
+.spin {
+  display: inline-block; width: 12px; height: 12px;
+  border: 2px solid rgba(26,94,128,.25);
+  border-top-color: #1a5e80;
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+  vertical-align: middle; margin-right: 5px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Extracted value chips */
+.ev-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 5px; margin-bottom: 9px; }
+.ev-chip {
+  background: var(--gray-50); border: 1px solid var(--gray-100);
+  border-radius: 6px; padding: 5px 9px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ev-chip.hit  { background: #eef9f3; border-color: #aad9be; }
+.ev-chip.miss { opacity: .7; }
+.ev-lbl { font-size: 10.5px; font-weight: 600; color: var(--gray-500); }
+.ev-val { font-size: 13px; font-weight: 700; }
+.ev-chip.hit  .ev-val { color: var(--ch-green); }
+.ev-chip.miss .ev-val { color: var(--gray-300); }
+
+.btn-use-vals {
+  width: 100%; padding: 9px;
+  background: var(--navy); border: none; border-radius: 7px;
+  color: #fff; font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: background .16s;
+  margin-bottom: 6px;
+}
+.btn-use-vals:hover { background: var(--navy-mid); }
+
+.btn-clear-img {
+  width: 100%; padding: 7px;
+  background: transparent; border: 1px solid var(--gray-100); border-radius: 7px;
+  color: var(--gray-500); font-family: 'Source Sans 3', sans-serif;
+  font-size: 12px; cursor: pointer; transition: all .16s;
+}
+.btn-clear-img:hover { border-color: var(--gray-300); color: var(--gray-700); background: var(--white); }
+
+/* ═══════════════════════════════════════════════
+   MANUAL INPUT CARDS
+═══════════════════════════════════════════════ */
+.input-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 11px; margin-bottom: 11px; }
+.input-grid-2 { display: grid; grid-template-columns: repeat(2,1fr); gap: 11px; margin-bottom: 0; }
+
+.ic {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-top: 3px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 13px 14px 12px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .16s, box-shadow .16s;
+}
+.ic:focus-within { border-color: var(--navy-light); box-shadow: var(--shadow-md); }
+.ic.ex   { border-top-color: var(--ch-extem); }
+.ic.fib  { border-top-color: var(--ch-fibtem); }
+.ic.txa  { border-top-color: var(--ch-txa); }
+.ic.opt  { border-top-color: var(--gray-200); border-top-width: 1px; }
+
+/* autofill highlight */
+.ic.autofilled { background: #f3fbf6 !important; border-color: #aad9be !important; }
+.autofill-badge {
+  display: inline-block; font-size: 9px; font-weight: 700;
+  letter-spacing: .06em; background: #d1f0e0; color: #1c5438;
+  padding: 1px 6px; border-radius: 10px; margin-left: 5px;
+  vertical-align: middle;
+}
+
+.ic-ch {
+  font-size: 10px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; margin-bottom: 2px;
+}
+.ic.ex  .ic-ch { color: var(--ch-extem); }
+.ic.fib .ic-ch { color: var(--ch-fibtem); }
+.ic.txa .ic-ch { color: var(--ch-txa); }
+.ic.opt .ic-ch { color: var(--gray-500); }
+
+.ic-label {
+  font-size: 12.5px; font-weight: 600; color: var(--navy);
+  margin-bottom: 9px; line-height: 1.3;
+}
+.ic-label span {
+  font-size: 10.5px; font-weight: 400;
+  background: var(--gray-50); border: 1px solid var(--gray-100);
+  padding: 1px 5px; border-radius: 4px;
+  color: var(--gray-500); margin-left: 4px;
+}
+
+.ic-row { display: flex; align-items: baseline; gap: 6px; }
+input[type="number"] {
+  flex: 1; min-width: 0;
+  background: var(--gray-50); border: 1px solid var(--gray-100);
+  border-radius: 7px; color: var(--navy);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 22px; font-weight: 700;
+  padding: 7px 10px;
+  outline: none;
+  transition: border-color .16s, box-shadow .16s, background .16s;
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+input[type="number"]:focus {
+  border-color: var(--navy-light);
+  box-shadow: 0 0 0 3px rgba(61,90,130,.10);
+  background: var(--white);
+}
+input[type="number"]::placeholder { color: var(--gray-300); font-weight: 300; }
+.ic-unit { font-size: 12px; color: var(--gray-500); flex-shrink: 0; }
+
+/* ═══════════════════════════════════════════════
+   ANALYZE BUTTON
+═══════════════════════════════════════════════ */
+.btn-analyze {
+  width: 100%;
+  margin-top: 13px;
+  margin-bottom: 26px;
+  padding: 14px;
+  background: var(--navy);
+  border: none; border-radius: var(--radius);
+  color: #fff;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 15px; font-weight: 700; letter-spacing: .04em;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  box-shadow: var(--shadow-md);
+  transition: background .16s, transform .1s, box-shadow .16s;
+}
+.btn-analyze:hover { background: var(--navy-mid); box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+.btn-analyze:active { transform: translateY(0); }
+
+/* ═══════════════════════════════════════════════
+   RESULTS
+═══════════════════════════════════════════════ */
+.results { display: none; }
+.results.show { display: block; animation: rise .32s ease; }
+@keyframes rise { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Value summary chips */
+.vals-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 9px; margin-bottom: 16px; }
+.val-chip {
+  background: var(--white); border: 1px solid var(--gray-100);
+  border-radius: var(--radius); padding: 10px 10px; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.vc-label { font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--gray-500); margin-bottom: 4px; }
+.vc-num   { font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 2px; }
+.vc-num.ok    { color: var(--ch-green); }
+.vc-num.warn  { color: #c87a10; }
+.vc-num.alert { color: var(--ch-extem); }
+.vc-num.na    { color: var(--gray-300); }
+.vc-unit { font-size: 10px; color: var(--gray-500); }
+
+/* Rec cards */
+.recs { display: flex; flex-direction: column; gap: 11px; margin-bottom: 16px; }
+
+.rec {
+  background: var(--white);
+  border: 1px solid var(--gray-100);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+/* per-type border color */
+.rec.factors  { border-color: var(--ch-extem-bd); }
+.rec.platelets{ border-color: var(--ch-plat-bd); }
+.rec.cryo     { border-color: var(--ch-fibtem-bd); }
+.rec.txa      { border-color: var(--ch-txa-bd); }
+.rec.txa-late { border-color: var(--ch-txa-late-bd); }
+.rec.normal   { border-color: var(--ch-green-bd); }
+
+/* Colored header band */
+.rec-hd {
+  padding: 9px 15px 8px;
+  display: flex; align-items: center; gap: 9px;
+}
+.rec.factors   .rec-hd { background: var(--ch-extem); }
+.rec.platelets .rec-hd { background: var(--ch-plat); }
+.rec.cryo      .rec-hd { background: var(--ch-fibtem); }
+.rec.txa       .rec-hd { background: var(--ch-txa); }
+.rec.txa-late  .rec-hd { background: var(--ch-txa-late); }
+.rec.normal    .rec-hd { background: var(--ch-green); }
+
+.rec-hd-badge {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: rgba(255,255,255,.75);
+  flex-shrink: 0;
+}
+.rec-hd-title {
+  font-size: 13.5px; font-weight: 700; color: #fff; flex: 1;
+}
+
+/* Treatment order — the big bold bit */
+.rec-tx {
+  padding: 13px 15px 10px;
+  border-bottom: 1px solid var(--gray-100);
+}
+.rec-tx-lbl {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--gray-500); margin-bottom: 5px;
+}
+.rec-tx-order {
+  font-size: 20px; font-weight: 700; line-height: 1.35;
+}
+.rec.factors   .rec-tx-order { color: #ae3826; }
+.rec.platelets .rec-tx-order { color: #1a4d96; }
+.rec.cryo      .rec-tx-order { color: #3a2888; }
+.rec.txa       .rec-tx-order { color: #1a6e9c; }
+.rec.txa-late  .rec-tx-order { color: #3d6070; }
+.rec.normal    .rec-tx-order { color: var(--ch-green); }
+
+/* Trigger row — secondary detail */
+.rec-tr {
+  padding: 8px 15px 12px;
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.rec-tr-arrow { font-size: 10px; color: var(--gray-300); margin-top: 3px; flex-shrink: 0; }
+.rec-tr-text  { font-size: 12.5px; color: var(--gray-500); line-height: 1.55; }
+.rec-tr-text strong { color: var(--gray-700); font-weight: 600; }
+.rec-tr-text em     { font-style: italic; }
+
+/* Repeat note */
+.repeat-note {
+  background: var(--white); border: 1px solid var(--gray-100);
+  border-radius: var(--radius); padding: 11px 15px; text-align: center;
+  font-size: 13px; color: var(--gray-500);
+  box-shadow: var(--shadow-sm); margin-bottom: 12px;
+}
+.repeat-note strong { color: var(--navy); }
+
+/* Also consider */
+.also-box {
+  display: none;
+  background: var(--white); border: 1px solid var(--gray-100);
+  border-radius: var(--radius); padding: 14px 15px;
+  box-shadow: var(--shadow-sm); margin-bottom: 18px;
+}
+.also-title {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--gray-500); margin-bottom: 9px;
+}
+.also-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.also-list li {
+  font-size: 13px; color: var(--gray-700);
+  padding-left: 14px; position: relative; line-height: 1.5;
+}
+.also-list li::before { content:'›'; position:absolute; left:0; color:var(--gray-300); font-weight:700; }
+.also-list li strong { color: var(--navy); }
+
+/* Reset button */
+.btn-reset {
+  width: 100%; padding: 10px;
+  background: transparent; border: 1px solid var(--gray-100);
+  border-radius: var(--radius); color: var(--gray-500);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .16s;
+}
+.btn-reset:hover { border-color: var(--gray-300); color: var(--gray-700); background: var(--white); }
+
+/* Footer */
+.footer {
+  text-align: center; margin-top: 34px; padding-top: 16px;
+  border-top: 1px solid var(--gray-100);
+  font-size: 11.5px; color: var(--gray-300); line-height: 1.75;
+}
+.footer strong { color: var(--gray-500); }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 560px) {
+  .ref-grid          { grid-template-columns: 1fr; }
+  .input-grid-3      { grid-template-columns: 1fr; }
+  .input-grid-2      { grid-template-columns: 1fr; }
+  .vals-row          { grid-template-columns: repeat(2,1fr); }
+  .ev-grid           { grid-template-columns: 1fr; }
+  .site-header       { gap: 10px; padding: 12px 16px 10px; }
+  .header-logo-img   { height: 36px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header class="site-header">
+  <img
+    src="https://www.critcaremd.com/images/site/ccpsa-logo.png"
+    alt="CCPSA"
+    class="header-logo-img"
+    onerror="this.style.display='none'; document.getElementById('logoFallback').style.display='flex';"
+  >
+  <div class="header-logo-fallback" id="logoFallback">
+    <span class="hf-abbr">CCPSA</span>
+    <span class="hf-name">Critical Care, Pulmonary<br>&amp; Sleep Associates</span>
+  </div>
+  <div class="header-sep"></div>
+  <div class="header-titles">
+    <div class="header-tool">ROTEM Trauma Calculator</div>
+    <div class="header-sub">Viscoelastic Hemostatic Assay · Algorithm-Guided Interpretation</div>
+  </div>
+</header>
+
+<!-- ═══════════════ PAGE ═══════════════ -->
+<div class="page">
+
+  <!-- MTP BANNER -->
+  <div class="mtp-banner">
+    <div class="mtp-dot"></div>
+    <div class="mtp-text">
+      <strong>Begin Damage Control Resuscitation · Initiate MTP 1:1:1</strong><br>
+      Maintain: Temp &gt;35°C &nbsp;·&nbsp; pH &gt;7.2 &nbsp;·&nbsp; iCa &gt;1.2 mmol/L &nbsp;·&nbsp; Hgb &gt;8.0 g/dL
+    </div>
+  </div>
+
+  <!-- REFERENCE PANEL -->
+  <div class="ref-panel" id="refPanel">
+    <button class="ref-toggle" onclick="toggleRef()">
+      <div class="ref-toggle-left">
+        <span class="ref-toggle-icon">📊</span>
+        <div>
+          <div class="ref-toggle-label">ROTEM Reference Guide</div>
+          <div class="ref-toggle-sub">Clot formation diagram &amp; abbreviations — tap to expand</div>
+        </div>
+      </div>
+      <span class="ref-chevron" id="refChevron">▼</span>
+    </button>
+    <div class="ref-body">
+      <div class="ref-grid">
+
+        <!-- SVG clot diagram — rebuilt for readability -->
+        <div class="ref-box" style="padding:16px 14px 14px;">
+          <div class="ref-box-title">ROTEM Clot Formation Tracing</div>
+          <svg class="clot-svg" viewBox="0 0 420 260" xmlns="http://www.w3.org/2000/svg" font-family="'Source Sans 3', Arial, sans-serif">
+
+            <!-- ── Background ── -->
+            <rect x="58" y="16" width="340" height="190" fill="#f8f9fb" rx="4"/>
+
+            <!-- ── Grid lines ── -->
+            <line x1="58" y1="63"  x2="398" y2="63"  stroke="#dde2ea" stroke-width="1" stroke-dasharray="4,4"/>
+            <line x1="58" y1="111" x2="398" y2="111" stroke="#dde2ea" stroke-width="1" stroke-dasharray="4,4"/>
+            <line x1="58" y1="159" x2="398" y2="159" stroke="#dde2ea" stroke-width="1" stroke-dasharray="4,4"/>
+            <!-- vertical time guides -->
+            <line x1="126" y1="16" x2="126" y2="206" stroke="#eaecf0" stroke-width="1"/>
+            <line x1="194" y1="16" x2="194" y2="206" stroke="#eaecf0" stroke-width="1"/>
+            <line x1="262" y1="16" x2="262" y2="206" stroke="#eaecf0" stroke-width="1"/>
+            <line x1="330" y1="16" x2="330" y2="206" stroke="#eaecf0" stroke-width="1"/>
+
+            <!-- ── Axes ── -->
+            <line x1="58" y1="16" x2="58"  y2="206" stroke="#b0bac8" stroke-width="1.5"/>
+            <line x1="58" y1="206" x2="398" y2="206" stroke="#b0bac8" stroke-width="1.5"/>
+
+            <!-- ── Y-axis labels ── -->
+            <text x="52" y="210" text-anchor="end" font-size="11" fill="#6b7a90">0</text>
+            <text x="52" y="163" text-anchor="end" font-size="11" fill="#6b7a90">25</text>
+            <text x="52" y="115" text-anchor="end" font-size="11" fill="#6b7a90">50</text>
+            <text x="52" y="67"  text-anchor="end" font-size="11" fill="#6b7a90">75</text>
+            <text x="52" y="24"  text-anchor="end" font-size="11" fill="#6b7a90">100</text>
+            <!-- Y axis title -->
+            <text x="13" y="130" text-anchor="middle" font-size="11" fill="#6b7a90" transform="rotate(-90,13,130)">Clot Firmness (mm)</text>
+
+            <!-- ── X-axis labels ── -->
+            <text x="58"  y="222" text-anchor="middle" font-size="11" fill="#6b7a90">0</text>
+            <text x="126" y="222" text-anchor="middle" font-size="11" fill="#6b7a90">10</text>
+            <text x="194" y="222" text-anchor="middle" font-size="11" fill="#6b7a90">20</text>
+            <text x="262" y="222" text-anchor="middle" font-size="11" fill="#6b7a90">30</text>
+            <text x="330" y="222" text-anchor="middle" font-size="11" fill="#6b7a90">40</text>
+            <text x="398" y="222" text-anchor="middle" font-size="11" fill="#6b7a90">50</text>
+            <text x="228" y="240" text-anchor="middle" font-size="11" fill="#6b7a90">Time (min)</text>
+
+            <!-- ── Clot shape — filled teardrop ── -->
+            <!-- Lower mirror edge -->
+            <path d="M58,206
+                     C68,206 74,205 82,203
+                     C92,199 100,191 110,176
+                     C118,163 123,150 132,134
+                     C140,120 148,108 160,97
+                     C170,88 180,83 194,81
+                     C208,79 220,80 232,82
+                     C244,84 256,88 268,95
+                     C280,102 288,113 296,126
+                     C304,140 308,155 312,168
+                     C316,181 318,194 322,201
+                     C324,204 328,206 334,206 Z"
+                  fill="rgba(26,47,78,0.10)" stroke="none"/>
+            <!-- Upper clot outline stroke -->
+            <path d="M58,206
+                     C68,206 74,205 82,203
+                     C92,199 100,191 110,176
+                     C118,163 123,150 132,134
+                     C140,120 148,108 160,97
+                     C170,88 180,83 194,81
+                     C208,79 220,80 232,82
+                     C244,84 256,88 268,95
+                     C280,102 288,113 296,126
+                     C304,140 308,155 312,168
+                     C316,181 318,194 322,201
+                     C324,204 328,206 334,206"
+                  fill="none" stroke="#1a2f4e" stroke-width="2.2"/>
+
+            <!-- ══════════════════════════════════════
+                 ANNOTATIONS
+            ══════════════════════════════════════ -->
+
+            <!-- ── CT — clotting time marker ── -->
+            <line x1="82" y1="206" x2="82" y2="178" stroke="#d9523a" stroke-width="1.8" stroke-dasharray="4,3"/>
+            <!-- CT label box -->
+            <rect x="60" y="164" width="30" height="18" rx="3" fill="#d9523a"/>
+            <text x="75" y="177" text-anchor="middle" font-size="11" fill="white" font-weight="700">CT</text>
+            <!-- CT arrow down -->
+            <line x1="82" y1="192" x2="82" y2="204" stroke="#d9523a" stroke-width="1.5" marker-end="url(#arrowRed)"/>
+
+            <!-- ── CFT — bracket below clot ── -->
+            <line x1="82"  y1="214" x2="118" y2="214" stroke="#2563b0" stroke-width="2"/>
+            <line x1="82"  y1="210" x2="82"  y2="218" stroke="#2563b0" stroke-width="2"/>
+            <line x1="118" y1="210" x2="118" y2="218" stroke="#2563b0" stroke-width="2"/>
+            <rect x="86" y="219" width="28" height="17" rx="3" fill="#2563b0"/>
+            <text x="100" y="231" text-anchor="middle" font-size="11" fill="white" font-weight="700">CFT</text>
+
+            <!-- ── Alpha angle arc ── -->
+            <path d="M82,206 Q100,183 118,163" fill="none" stroke="#4e3ba8" stroke-width="1.8" stroke-dasharray="4,3"/>
+            <!-- alpha label -->
+            <rect x="104" y="172" width="22" height="17" rx="3" fill="#4e3ba8"/>
+            <text x="115" y="184" text-anchor="middle" font-size="12" fill="white" font-weight="700">α</text>
+
+            <!-- ── A10 — vertical line + dot ── -->
+            <line x1="126" y1="144" x2="126" y2="206" stroke="#3b9ed4" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <circle cx="126" cy="144" r="5" fill="#3b9ed4" stroke="white" stroke-width="1.5"/>
+            <!-- A10 label -->
+            <rect x="130" y="135" width="32" height="17" rx="3" fill="#3b9ed4"/>
+            <text x="146" y="147" text-anchor="middle" font-size="11" fill="white" font-weight="700">A10</text>
+
+            <!-- ── MCF — horizontal span bracket at peak ── -->
+            <line x1="194" y1="74" x2="286" y2="74" stroke="#2e7d52" stroke-width="2"/>
+            <line x1="194" y1="70" x2="194" y2="78" stroke="#2e7d52" stroke-width="2"/>
+            <line x1="286" y1="70" x2="286" y2="78" stroke="#2e7d52" stroke-width="2"/>
+            <!-- dashed verticals from MCF bracket to clot -->
+            <line x1="194" y1="78" x2="194" y2="81" stroke="#2e7d52" stroke-width="1.2" stroke-dasharray="3,2"/>
+            <line x1="286" y1="78" x2="286" y2="90" stroke="#2e7d52" stroke-width="1.2" stroke-dasharray="3,2"/>
+            <!-- MCF label -->
+            <rect x="214" y="58" width="34" height="18" rx="3" fill="#2e7d52"/>
+            <text x="231" y="71" text-anchor="middle" font-size="11" fill="white" font-weight="700">MCF</text>
+
+            <!-- ── ML — lysis drop on right side ── -->
+            <!-- Lysis extension of clot dropping -->
+            <path d="M334,206 C342,206 350,204 358,196 C364,190 368,178 372,163 C376,148 378,134 382,124"
+                  fill="none" stroke="#d9523a" stroke-width="1.8" stroke-dasharray="5,3"/>
+            <!-- ML bracket vertical -->
+            <line x1="382" y1="124" x2="382" y2="206" stroke="#d9523a" stroke-width="1.5" stroke-dasharray="3,3"/>
+            <!-- ML span bracket -->
+            <line x1="388" y1="124" x2="388" y2="206" stroke="#d9523a" stroke-width="1.8"/>
+            <line x1="384" y1="124" x2="392" y2="124" stroke="#d9523a" stroke-width="1.8"/>
+            <line x1="384" y1="206" x2="392" y2="206" stroke="#d9523a" stroke-width="1.8"/>
+            <!-- ML label -->
+            <rect x="393" y="158" width="24" height="17" rx="3" fill="#d9523a"/>
+            <text x="405" y="170" text-anchor="middle" font-size="11" fill="white" font-weight="700">ML</text>
+
+            <!-- ── Arrow marker def ── -->
+            <defs>
+              <marker id="arrowRed" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L6,3 L0,6 Z" fill="#d9523a"/>
+              </marker>
+            </defs>
+
+          </svg>
+
+          <!-- Color-coded legend below diagram -->
+          <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;padding:0 2px;">
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3d4a5c;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#d9523a;flex-shrink:0;"></span>CT &amp; ML
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3d4a5c;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2563b0;flex-shrink:0;"></span>CFT
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3d4a5c;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#4e3ba8;flex-shrink:0;"></span>Alpha angle
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3d4a5c;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#3b9ed4;flex-shrink:0;"></span>A10
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:#3d4a5c;">
+              <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:#2e7d52;flex-shrink:0;"></span>MCF
+            </div>
+          </div>
+        </div>
+
+        <!-- Abbreviations -->
+        <div class="ref-box">
+          <div class="ref-box-title">Abbreviations</div>
+          <table class="abbrev-tbl">
+            <tr><td class="abbr">CT</td><td class="def">Clotting Time — time to initial fibrin formation</td></tr>
+            <tr><td class="abbr">CFT</td><td class="def">Clot Formation Time — time to reach 20 mm firmness</td></tr>
+            <tr><td class="abbr">α (Alpha)</td><td class="def">Alpha angle — rate of clot strengthening</td></tr>
+            <tr><td class="abbr">A10</td><td class="def">Amplitude at 10 min — firmness 10 min after CT</td></tr>
+            <tr><td class="abbr">MCF</td><td class="def">Maximum Clot Firmness — peak firmness achieved</td></tr>
+            <tr><td class="abbr">ML</td><td class="def">Maximum Lysis — % reduction from MCF (fibrinolysis)</td></tr>
+            <tr class="sep"><td class="abbr">EXTEM</td><td class="def">Extrinsic pathway — overall coagulation</td></tr>
+            <tr><td class="abbr">FIBTEM</td><td class="def">Fibrinogen-specific clot (platelets blocked)</td></tr>
+            <tr><td class="abbr">TXA</td><td class="def">Tranexamic acid — antifibrinolytic agent</td></tr>
+            <tr><td class="abbr">FFP</td><td class="def">Fresh Frozen Plasma — clotting factor replacement</td></tr>
+            <tr><td class="abbr">PCC</td><td class="def">Prothrombin Complex Concentrate</td></tr>
+            <tr><td class="abbr">Cryo</td><td class="def">Cryoprecipitate — concentrated fibrinogen source</td></tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── ENTRY TABS ─── -->
+  <div class="section-label" style="margin-top:0">Enter ROTEM Values</div>
+
+  <div class="entry-tabs">
+    <button class="entry-tab active" id="tabManual" onclick="switchTab('manual')">
+      <span class="entry-tab-icon">✏️</span> Manual Entry
+    </button>
+    <button class="entry-tab" id="tabPhoto" onclick="switchTab('photo')">
+      <span class="entry-tab-icon">📷</span> Upload Lab Photo
+    </button>
+  </div>
+
+  <!-- PHOTO PANEL -->
+  <div class="entry-panel hidden" id="panelPhoto">
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="imgInput" accept="image/*" onchange="handleUpload(event)">
+      <div class="dz-icon">🖼️</div>
+      <div class="dz-label">Drop your ROTEM printout here</div>
+      <div class="dz-sub">or <strong>tap to browse</strong> · Works with phone camera photos too</div>
+    </div>
+    <div class="upload-preview" id="uploadPreview">
+      <div class="preview-row">
+        <div class="preview-thumb"><img id="previewImg" src="" alt="Preview"></div>
+        <div class="preview-detail">
+          <div class="preview-fname" id="previewFname"></div>
+          <div class="ext-status reading" id="extStatus">
+            <span class="spin"></span>Reading image with AI — extracting ROTEM values…
+          </div>
+          <div class="ev-grid" id="evGrid"></div>
+          <button class="btn-use-vals" id="btnUseVals" style="display:none" onclick="applyValues()">
+            ✓ &nbsp;Use These Values &amp; Analyze
+          </button>
+          <button class="btn-clear-img" onclick="clearImg()">✕ &nbsp;Remove image</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MANUAL PANEL -->
+  <div class="entry-panel" id="panelManual">
+    <div class="input-grid-3">
+      <div class="ic ex" id="ic-ct">
+        <div class="ic-ch">EXTEM</div>
+        <div class="ic-label">Clotting Time <span>CT</span></div>
+        <div class="ic-row">
+          <input type="number" id="ct" min="0" max="999" placeholder="—">
+          <span class="ic-unit">sec</span>
+        </div>
+      </div>
+      <div class="ic ex" id="ic-extem">
+        <div class="ic-ch">EXTEM</div>
+        <div class="ic-label">Amplitude at 10 min <span>A10</span></div>
+        <div class="ic-row">
+          <input type="number" id="extem_a10" min="0" max="100" placeholder="—">
+          <span class="ic-unit">mm</span>
+        </div>
+      </div>
+      <div class="ic fib" id="ic-fibtem">
+        <div class="ic-ch">FIBTEM</div>
+        <div class="ic-label">Amplitude at 10 min <span>A10</span></div>
+        <div class="ic-row">
+          <input type="number" id="fibtem_a10" min="0" max="100" placeholder="—">
+          <span class="ic-unit">mm</span>
+        </div>
+      </div>
+    </div>
+    <div class="input-grid-2">
+      <div class="ic txa" id="ic-ml">
+        <div class="ic-ch">EXTEM or FIBTEM</div>
+        <div class="ic-label">Maximum Lysis <span>ML</span> <span style="background:#fff8ec;border-color:#f5d78a;color:#7a5200;font-size:9px;">optional</span></div>
+        <div class="ic-row">
+          <input type="number" id="ml" min="0" max="100" placeholder="—">
+          <span class="ic-unit">%</span>
+        </div>
+      </div>
+      <div class="ic opt" id="ic-time">
+        <div class="ic-ch">Lysis Timing</div>
+        <div class="ic-label">Time from CT to ML <span style="background:#fff8ec;border-color:#f5d78a;color:#7a5200;font-size:9px;">optional</span></div>
+        <div class="ic-row">
+          <input type="number" id="lysis_time" min="0" max="120" placeholder="—">
+          <span class="ic-unit">min</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-analyze" onclick="analyze()">▶ &nbsp; Generate Recommendations</button>
+
+  <!-- ─── RESULTS ─── -->
+  <div class="results" id="results">
+
+    <div class="section-label">Entered Values</div>
+    <div class="vals-row" id="valsRow"></div>
+
+    <div class="section-label">Recommendations</div>
+    <div class="recs" id="recsStack"></div>
+
+    <div class="repeat-note">
+      <strong>Repeat EXTEM + FIBTEM</strong> after each intervention
+    </div>
+
+    <div class="also-box" id="alsoBox">
+      <div class="also-title">Also Consider</div>
+      <ul class="also-list" id="alsoList"></ul>
+    </div>
+
+    <button class="btn-reset" onclick="resetAll()">↺ &nbsp; Clear &amp; Reset</button>
+  </div>
+
+  <div class="footer">
+    <strong>CCPSA · Critical Care, Pulmonary &amp; Sleep Associates</strong><br>
+    For clinical decision support only — not a substitute for physician judgment.<br>
+    Based on ROTEM Trauma Protocol. Repeat testing after each intervention.
+  </div>
+
+</div><!-- /page -->
+
+<script>
+/* ─── UI STATE ─────────────────────────────────────────────── */
+let _extracted = {};
+
+function toggleRef() {
+  document.getElementById('refPanel').classList.toggle('open');
+}
+
+function switchTab(tab) {
+  ['manual','photo'].forEach(t => {
+    document.getElementById('panel' + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('hidden', t !== tab);
+    document.getElementById('tab'   + t.charAt(0).toUpperCase() + t.slice(1)).classList.toggle('active',  t === tab);
+  });
+}
+
+/* ─── DRAG & DROP ──────────────────────────────────────────── */
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
+dz.addEventListener('dragleave', ()  => dz.classList.remove('dragover'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) {
+    const dt = new DataTransfer(); dt.items.add(f);
+    document.getElementById('imgInput').files = dt.files;
+    handleUpload({ target: { files: [f] } });
+  }
+});
+
+/* ─── IMAGE UPLOAD + AI EXTRACTION ────────────────────────── */
+async function handleUpload(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const dataUrl = e.target.result;
+    document.getElementById('previewImg').src = dataUrl;
+    document.getElementById('previewFname').textContent = file.name;
+    document.getElementById('uploadPreview').classList.add('visible');
+    setExtStatus('reading', '<span class="spin"></span>Reading image with AI — extracting ROTEM values…');
+    document.getElementById('evGrid').innerHTML = '';
+    document.getElementById('btnUseVals').style.display = 'none';
+
+    const b64   = dataUrl.split(',')[1];
+    const mime  = file.type || 'image/jpeg';
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: mime, data: b64 } },
+              { type: 'text', text: `You are a ROTEM lab result reader. Extract values from this ROTEM printout.
+
+Find:
+- EXTEM CT (clotting time, seconds)
+- EXTEM A10 (amplitude at 10 min, mm)
+- FIBTEM A10 (amplitude at 10 min, mm)
+- ML or Maximum Lysis (%)
+- Lysis timing (minutes, if shown)
+
+Return ONLY valid JSON, no markdown, no extra text:
+{"ct":null_or_number,"extem_a10":null_or_number,"fibtem_a10":null_or_number,"ml":null_or_number,"lysis_time":null_or_number,"confidence":"high"|"partial"|"not_found","notes":"brief note"}` }
+            ]
+          }]
+        })
+      });
+
+      const data = await res.json();
+      const txt  = (data.content || []).find(b => b.type === 'text')?.text || '';
+      let parsed;
+      try { parsed = JSON.parse(txt.replace(/```json|```/g, '').trim()); }
+      catch { throw new Error('parse fail'); }
+
+      _extracted = parsed;
+      renderExtracted(parsed);
+
+    } catch (err) {
+      setExtStatus('error', '⚠ Could not read this image. Try a clearer straight-on photo, or enter values manually.');
+      console.error(err);
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+function setExtStatus(cls, html) {
+  const el = document.getElementById('extStatus');
+  el.className = 'ext-status ' + cls;
+  el.innerHTML = html;
+}
+
+function renderExtracted(p) {
+  const fields = [
+    { key:'ct',         lbl:'EXTEM CT',   unit:'sec' },
+    { key:'extem_a10',  lbl:'EXTEM A10',  unit:'mm'  },
+    { key:'fibtem_a10', lbl:'FIBTEM A10', unit:'mm'  },
+    { key:'ml',         lbl:'Max Lysis',  unit:'%'   },
+    { key:'lysis_time', lbl:'Lysis Time', unit:'min' },
+  ];
+  const hasAny = fields.some(f => p[f.key] != null);
+
+  if (p.confidence === 'not_found' || !hasAny) {
+    setExtStatus('error', '⚠ No ROTEM values found. Try a clearer photo or use Manual Entry.');
+    return;
+  }
+  const cls = p.confidence === 'high' ? 'success' : 'partial';
+  const icon = p.confidence === 'high' ? '✓' : '⚠';
+  const msg  = (p.confidence === 'high' ? 'Values extracted' : 'Partial extraction — please review')
+             + (p.notes ? ' · ' + p.notes : '');
+  setExtStatus(cls, `${icon} ${msg}`);
+
+  document.getElementById('evGrid').innerHTML = fields.map(f => {
+    const v = p[f.key];
+    const hit = v != null;
+    return `<div class="ev-chip ${hit?'hit':'miss'}">
+      <span class="ev-lbl">${f.lbl}</span>
+      <span class="ev-val">${hit ? v+' '+f.unit : '—'}</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('btnUseVals').style.display = 'block';
+}
+
+function applyValues() {
+  const map = {
+    ct:'ct', extem_a10:'extem_a10', fibtem_a10:'fibtem_a10',
+    ml:'ml', lysis_time:'lysis_time'
+  };
+  const cardMap = {
+    ct:'ic-ct', extem_a10:'ic-extem', fibtem_a10:'ic-fibtem',
+    ml:'ic-ml', lysis_time:'ic-time'
+  };
+
+  // Clear old badges
+  document.querySelectorAll('.ic.autofilled').forEach(c => {
+    c.classList.remove('autofilled');
+    c.querySelector('.autofill-badge')?.remove();
+  });
+
+  switchTab('manual');
+
+  Object.entries(map).forEach(([key, id]) => {
+    const val = _extracted[key];
+    if (val != null) {
+      document.getElementById(id).value = val;
+      const card = document.getElementById(cardMap[key]);
+      if (card) {
+        card.classList.add('autofilled');
+        const lbl = card.querySelector('.ic-label');
+        if (lbl && !lbl.querySelector('.autofill-badge')) {
+          const b = document.createElement('span');
+          b.className = 'autofill-badge'; b.textContent = 'from photo';
+          lbl.appendChild(b);
+        }
+      }
+    }
+  });
+
+  // Auto-run analysis
+  analyze();
+}
+
+function clearImg() {
+  document.getElementById('imgInput').value = '';
+  document.getElementById('uploadPreview').classList.remove('visible');
+  document.getElementById('previewImg').src = '';
+  document.getElementById('evGrid').innerHTML = '';
+  document.getElementById('btnUseVals').style.display = 'none';
+  _extracted = {};
+}
+
+/* ─── ANALYZE ──────────────────────────────────────────────── */
+function analyze() {
+  const ct    = parseFloat(document.getElementById('ct').value);
+  const exA10 = parseFloat(document.getElementById('extem_a10').value);
+  const fibA10= parseFloat(document.getElementById('fibtem_a10').value);
+  const ml    = parseFloat(document.getElementById('ml').value);
+  const tmin  = parseFloat(document.getElementById('lysis_time').value);
+
+  if ([ct,exA10,fibA10,ml].every(isNaN)) {
+    alert('Please enter at least one ROTEM value.'); return;
+  }
+
+  const recs = [], also = [];
+
+  /* ── Channel 1: EXTEM CT → Factors ── */
+  if (!isNaN(ct) && ct > 80) {
+    recs.push({
+      type:'factors', badge:'EXTEM CT', title:'Low Factors',
+      order:'FFP 10–15 mL/kg &nbsp;<span style="font-size:15px;font-weight:400;color:#aaa">or</span>&nbsp; PCC 20 IU/kg',
+      trigger:`EXTEM CT <strong>${ct} sec</strong> — threshold &gt;80 sec`
+    });
+    also.push('If bleeding uncontrolled: consider FFP or PCC guided by EXTEM CT');
+    also.push('If P2Y₁₂ inhibitor use known or suspected: consider Platelets');
+  }
+
+  /* ── Channel 3: EXTEM A10 + FIBTEM A10 → Platelets / Cryo+Plat ── */
+  if (!isNaN(exA10) && !isNaN(fibA10)) {
+    if (exA10 < 40 && fibA10 > 10) {
+      recs.push({
+        type:'platelets', badge:'EXTEM + FIBTEM', title:'Platelet Deficit',
+        order:'1–2 Units Platelets',
+        trigger:`EXTEM A10 <strong>${exA10} mm</strong> (&lt;40) &nbsp;AND&nbsp; FIBTEM A10 <strong>${fibA10} mm</strong> (&gt;10)`
+      });
+    } else if (exA10 < 40 && fibA10 <= 10) {
+      recs.push({
+        type:'cryo', badge:'EXTEM + FIBTEM', title:'Fibrinogen + Platelet Deficit',
+        order:'1 Unit Cryoprecipitate &nbsp;+&nbsp; 1 Unit Platelets',
+        trigger:`EXTEM A10 <strong>${exA10} mm</strong> (&lt;40) &nbsp;AND&nbsp; FIBTEM A10 <strong>${fibA10} mm</strong> (&lt;10)`
+      });
+    }
+  }
+
+  /* ── Channel 2: FIBTEM A10 alone → Cryo ── */
+  if (!isNaN(fibA10)) {
+    const exP   = !isNaN(exA10);
+    const done  = exP && exA10 < 40 && fibA10 <= 10;
+    if (!done) {
+      if (fibA10 < 5)
+        recs.push({ type:'cryo', badge:'FIBTEM', title:'Severe Fibrinogen Deficit',
+          order:'2 Units Cryoprecipitate',
+          trigger:`FIBTEM A10 <strong>${fibA10} mm</strong> — threshold &lt;5 mm` });
+      else if (fibA10 < 10)
+        recs.push({ type:'cryo', badge:'FIBTEM', title:'Fibrinogen Deficit',
+          order:'1 Unit Cryoprecipitate',
+          trigger:`FIBTEM A10 <strong>${fibA10} mm</strong> — threshold &lt;10 mm` });
+    }
+  }
+
+  /* ── Channel 4: Max Lysis → TXA ── */
+  if (!isNaN(ml)) {
+    if (ml >= 15) {
+      if (!isNaN(tmin)) {
+        if (tmin < 40)
+          recs.push({ type:'txa', badge:'MAX LYSIS · EARLY', title:'Early Fibrinolysis — Give TXA',
+            order:'TXA 1g IV bolus, then 1g IV over 8 hrs',
+            trigger:`ML <strong>${ml}%</strong> (≥15%) &nbsp;·&nbsp; Time <strong>${tmin} min</strong> (&lt;40 min = Early)<br><em>Unless TXA already administered</em>` });
+        else
+          recs.push({ type:'txa-late', badge:'MAX LYSIS · LATE', title:'Late Fibrinolysis — No TXA',
+            order:'No treatment indicated',
+            trigger:`ML <strong>${ml}%</strong> (≥15%) &nbsp;·&nbsp; Time <strong>${tmin} min</strong> (≥40 min = Late fibrinolysis)<br><em>TXA is not recommended for late fibrinolysis</em>` });
+      } else {
+        recs.push({ type:'txa', badge:'MAX LYSIS', title:'Fibrinolysis Detected — Confirm Timing',
+          order:'TXA 1g IV bolus + 1g over 8 hrs <em style="font-size:14px;font-weight:400;color:#5a9ab8">&nbsp;if &lt;40 min</em>',
+          trigger:`ML <strong>${ml}%</strong> (≥15%) detected · Enter lysis time above to confirm:<br><strong>&lt;40 min</strong> = Early → Give TXA &nbsp;·&nbsp; <strong>≥40 min</strong> = Late → No treatment` });
+      }
+    } else if (ml > 0) {
+      recs.push({ type:'normal', badge:'MAX LYSIS', title:'Lysis Within Normal Limits',
+        order:'No TXA indicated',
+        trigger:`ML <strong>${ml}%</strong> — below 15% threshold. No significant fibrinolysis detected.` });
+    }
+  }
+
+  /* ── All normal ── */
+  if (recs.length === 0)
+    recs.push({ type:'normal', badge:null, title:'Values Within Normal Limits',
+      order:'No intervention indicated',
+      trigger:'Continue MTP 1:1:1, optimize physiology, and repeat ROTEM as clinically indicated.' });
+
+  also.push('If intractable bleeding: consider <strong>Factor VIIa 20–40 mcg/kg</strong>');
+
+  renderVals(ct, exA10, fibA10, ml);
+  renderRecs(recs);
+  renderAlso(also);
+
+  const el = document.getElementById('results');
+  el.classList.add('show');
+  el.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderVals(ct, exA10, fibA10, ml) {
+  const chips = [
+    { lbl:'EXTEM CT',  val:ct,     u:'sec', s: isNaN(ct)?'na':ct>80?'alert':'ok' },
+    { lbl:'EXTEM A10', val:exA10,  u:'mm',  s: isNaN(exA10)?'na':exA10<40?'alert':exA10<50?'warn':'ok' },
+    { lbl:'FIBTEM A10',val:fibA10, u:'mm',  s: isNaN(fibA10)?'na':fibA10<5?'alert':fibA10<10?'warn':'ok' },
+    { lbl:'Max Lysis', val:ml,     u:'%',   s: isNaN(ml)?'na':ml>=15?'alert':ml>=8?'warn':'ok' },
+  ];
+  document.getElementById('valsRow').innerHTML = chips.map(c => `
+    <div class="val-chip">
+      <div class="vc-label">${c.lbl}</div>
+      <div class="vc-num ${c.s}">${isNaN(c.val)?'—':c.val}</div>
+      <div class="vc-unit">${!isNaN(c.val)?c.u:''}</div>
+    </div>`).join('');
+}
+
+function renderRecs(recs) {
+  document.getElementById('recsStack').innerHTML = recs.map(r => `
+    <div class="rec ${r.type}">
+      <div class="rec-hd">
+        <span class="rec-hd-badge">${r.badge||''}</span>
+        <span class="rec-hd-title">${r.title}</span>
+      </div>
+      <div class="rec-tx">
+        <div class="rec-tx-lbl">Treatment Order</div>
+        <div class="rec-tx-order">${r.order}</div>
+      </div>
+      <div class="rec-tr">
+        <span class="rec-tr-arrow">▸</span>
+        <span class="rec-tr-text">${r.trigger}</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderAlso(items) {
+  document.getElementById('alsoList').innerHTML = items.map(i=>`<li>${i}</li>`).join('');
+  document.getElementById('alsoBox').style.display = 'block';
+}
+
+function resetAll() {
+  ['ct','extem_a10','fibtem_a10','ml','lysis_time'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  clearImg();
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('alsoBox').style.display = 'none';
+  document.querySelectorAll('.ic.autofilled').forEach(c => {
+    c.classList.remove('autofilled');
+    c.querySelector('.autofill-badge')?.remove();
+  });
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+</script>
+</body>
+</html>
